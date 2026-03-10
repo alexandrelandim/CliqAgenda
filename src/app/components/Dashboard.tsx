@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
 import { Calendar, DollarSign, Users, Clock, Eye, EyeOff, Bell, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { mockAppointments, mockNotifications } from '../data/mockData';
