@@ -10,6 +10,13 @@ import AppointmentsCalendar from "./components/AppointmentsCalendar";
 import AppointmentDetail from "./components/AppointmentDetail";
 import EditAppointment from "./components/EditAppointment";
 import Payments from "./components/Payments";
+import PaymentsPending from "./components/PaymentsPending";
+import PaymentsFuture from "./components/PaymentsFuture";
+import PaymentsReceived from "./components/PaymentsReceived";
+import PaymentsChart from "./components/PaymentsChart";
+import Pricing from "./components/Pricing";
+import Notifications from "./components/Notifications";
+import NotificationDetail from "./components/NotificationDetail";
 import Clients from "./components/Clients";
 import ClientDetail from "./components/ClientDetail";
 import Login from "./components/Login";
@@ -63,6 +70,13 @@ export const router = createBrowserRouter([
           { path: "appointments/:appointmentId", Component: AppointmentDetail },
           { path: "appointments/:appointmentId/edit", Component: EditAppointment },
           { path: "payments", Component: Payments },
+          { path: "payments/pending", Component: PaymentsPending },
+          { path: "payments/future", Component: PaymentsFuture },
+          { path: "payments/received", Component: PaymentsReceived },
+          { path: "payments/chart", Component: PaymentsChart },
+          { path: "pricing", Component: Pricing },
+          { path: "notifications", Component: Notifications },
+          { path: "notifications/:notificationId", Component: NotificationDetail },
           { path: "clients", Component: Clients },
           { path: "clients/:clientId", Component: ClientDetail },
         ],
