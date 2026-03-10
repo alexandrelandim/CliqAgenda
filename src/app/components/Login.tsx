@@ -53,7 +53,7 @@ export default function Login() {
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">CliqAgenda</h1>
           <p className="text-purple-200 text-sm">
-            Simplifique seus agendamentos
+            Simplifique seus agendamentos. Não perca nenhum pagamento.
           </p>
         </div>
 
