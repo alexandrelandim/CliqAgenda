@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { Check, Info, Plus, X } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
+import { Checkbox } from './ui/checkbox';
 import { serviceIcons, serviceLabels } from '../data/mockData';
 import { ServiceType } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -21,6 +22,8 @@ interface ServiceConfig {
 
 export default function OnboardingServices() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isEditMode = searchParams.get('edit') === 'true';
   const { completeOnboarding } = useAuth();
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [serviceConfigs, setServiceConfigs] = useState<Record<string, ServiceConfig>>({});
@@ -29,6 +32,9 @@ export default function OnboardingServices() {
   const [customServiceName, setCustomServiceName] = useState('');
   const [customServices, setCustomServices] = useState<Array<{ id: string; name: string }>>([]);
   const [pixKey, setPixKey] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
+  const [termsError, setTermsError] = useState(false);
 
   const baseServices: ServiceType[] = [
     'manicure',
@@ -112,13 +118,23 @@ export default function OnboardingServices() {
       }
     }
 
+    // Check if terms and privacy are accepted (only in initial onboarding)
+    if (!isEditMode && (!acceptedTerms || !acceptedPrivacy)) {
+      setTermsError(true);
+      toast.error('Aceite os termos e a política de privacidade');
+      setTimeout(() => setTermsError(false), 500);
+      return;
+    }
+
     setLoading(true);
     try {
       // Simulate API call to save configurations
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      completeOnboarding();
-      toast.success('Configuração concluída!');
+      if (!isEditMode) {
+        completeOnboarding();
+      }
+      toast.success(isEditMode ? 'Serviços atualizados!' : 'Configuração concluída!');
       navigate('/');
     } catch (error) {
       toast.error('Erro ao salvar configurações');
@@ -311,9 +327,79 @@ export default function OnboardingServices() {
               <p className="text-xs text-gray-500 mt-1.5">
                 CPF, CNPJ, e-mail, telefone ou chave aleatória
               </p>
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mt-3 flex gap-2">
+                <Info className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-800">
+                  <span className="font-medium">Atenção:</span> Sua chave PIX será usada <strong>apenas</strong> para criar mensagens de cobrança enviadas aos seus clientes. Não armazenamos dados bancários.
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
+
+        {/* Terms and Privacy */}
+        {!isEditMode && (
+          <Card className={termsError ? 'animate-shake border-red-300' : ''}>
+            <CardHeader>
+              <CardTitle className="text-base">Termos e Privacidade</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex items-start gap-2">
+                  <Checkbox
+                    id="terms"
+                    checked={acceptedTerms}
+                    onCheckedChange={(checked) => {
+                      setAcceptedTerms(checked === true);
+                      setTermsError(false);
+                    }}
+                  />
+                  <Label htmlFor="terms" className="text-sm cursor-pointer">
+                    Li e aceito os{' '}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        navigate('/terms');
+                      }}
+                      className="text-purple-600 hover:underline font-medium"
+                    >
+                      Termos de Uso
+                    </button>
+                  </Label>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Checkbox
+                    id="privacy"
+                    checked={acceptedPrivacy}
+                    onCheckedChange={(checked) => {
+                      setAcceptedPrivacy(checked === true);
+                      setTermsError(false);
+                    }}
+                  />
+                  <Label htmlFor="privacy" className="text-sm cursor-pointer">
+                    Li e aceito a{' '}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        navigate('/privacy');
+                      }}
+                      className="text-purple-600 hover:underline font-medium"
+                    >
+                      Política de Privacidade
+                    </button>
+                  </Label>
+                </div>
+                {termsError && (
+                  <p className="text-sm text-red-600 font-medium mt-1">
+                    ⚠️ Você deve aceitar os termos e a política de privacidade para continuar.
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Action Buttons */}
         <div className="grid grid-cols-2 gap-3">

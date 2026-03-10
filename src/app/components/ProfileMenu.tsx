@@ -1,20 +1,43 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { LogOut, User, Settings } from 'lucide-react';
+import { LogOut, Settings, FileText, Shield, Camera } from 'lucide-react';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
+import { UserAvatar } from './UserAvatar';
 
 export default function ProfileMenu() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, updateUserPhoto } = useAuth();
   const [showMenu, setShowMenu] = useState(false);
 
   const handleLogout = () => {
     logout();
     toast.success('Logout realizado com sucesso!');
     navigate('/login');
+  };
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Por favor, selecione uma imagem válida');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('A imagem deve ter no máximo 5MB');
+      return;
+    }
+
+    // Create object URL for preview
+    const photoUrl = URL.createObjectURL(file);
+    updateUserPhoto(photoUrl);
+    toast.success('Foto atualizada com sucesso!');
   };
 
   return (
@@ -24,7 +47,12 @@ export default function ProfileMenu() {
         className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
         aria-label="Menu do perfil"
       >
-        <User className="w-5 h-5 text-white" />
+        <UserAvatar 
+          name={user?.name} 
+          photoUrl={user?.photoUrl}
+          size="sm" 
+          className="!w-8 !h-8 !text-xs border-2 border-white"
+        />
       </button>
 
       <Dialog open={showMenu} onOpenChange={setShowMenu}>
@@ -39,8 +67,24 @@ export default function ProfileMenu() {
           <div className="space-y-4">
             <div className="bg-gray-50 p-4 rounded-lg">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
-                  <User className="w-6 h-6 text-purple-600" />
+                <div className="relative">
+                  <UserAvatar 
+                    name={user?.name} 
+                    photoUrl={user?.photoUrl}
+                    size="xl" 
+                    onClick={() => document.getElementById('photo-upload')?.click()}
+                    className="ring-2 ring-purple-600"
+                  />
+                  <div className="absolute bottom-0 right-0 bg-purple-600 rounded-full p-1.5 shadow-lg">
+                    <Camera className="w-3 h-3 text-white" />
+                  </div>
+                  <input
+                    id="photo-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoUpload}
+                    className="hidden"
+                  />
                 </div>
                 <div>
                   <div className="font-medium">{user?.name}</div>
@@ -58,11 +102,35 @@ export default function ProfileMenu() {
                 className="w-full justify-start"
                 onClick={() => {
                   setShowMenu(false);
-                  navigate('/onboarding');
+                  navigate('/onboarding?edit=true');
                 }}
               >
                 <Settings className="w-4 h-4 mr-2" />
                 Configurar Serviços
+              </Button>
+
+              <Button
+                variant="outline"
+                className="w-full justify-start text-gray-600"
+                onClick={() => {
+                  setShowMenu(false);
+                  navigate('/privacy');
+                }}
+              >
+                <Shield className="w-4 h-4 mr-2" />
+                Privacidade
+              </Button>
+
+              <Button
+                variant="outline"
+                className="w-full justify-start text-gray-600"
+                onClick={() => {
+                  setShowMenu(false);
+                  navigate('/terms');
+                }}
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Termos de Uso
               </Button>
 
               <Button
