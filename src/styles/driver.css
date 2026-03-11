@@ -1,0 +1,124 @@
+/* Importar estilos base do Driver.js */
+@import 'driver.js/dist/driver.css';
+
+/* Customização do Driver.js para o tema CliqAgenda */
+
+/* Overlay escuro */
+.driver-overlay {
+  background-color: rgba(0, 0, 0, 0.40) !important;
+}
+
+/* Popover principal */
+.driver-popover {
+  background: white !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3) !important;
+  max-width: 320px !important;
+}
+
+/* Título do popover */
+.driver-popover-title {
+  color: #7c3aed !important; /* purple-600 */
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  margin-bottom: 8px !important;
+}
+
+/* Descrição do popover */
+.driver-popover-description {
+  color: #4b5563 !important; /* gray-600 */
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+  margin-bottom: 16px !important;
+}
+
+/* Botões */
+.driver-popover-next-btn,
+.driver-popover-prev-btn,
+.driver-popover-close-btn {
+  background: #7c3aed !important; /* purple-600 */
+  color: white !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 8px 16px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.driver-popover-next-btn:hover,
+.driver-popover-prev-btn:hover {
+  background: #6d28d9 !important; /* purple-700 */
+  transform: scale(1.02) !important;
+}
+
+.driver-popover-prev-btn {
+  background: transparent !important;
+  color: #7c3aed !important;
+  border: 1px solid #e9d5ff !important; /* purple-200 */
+}
+
+.driver-popover-prev-btn:hover {
+  background: #f3e8ff !important; /* purple-50 */
+  border-color: #c084fc !important; /* purple-400 */
+}
+
+.driver-popover-close-btn {
+  background: transparent !important;
+  color: #9ca3af !important; /* gray-400 */
+  padding: 4px !important;
+  font-size: 20px !important;
+  position: absolute !important;
+  top: 12px !important;
+  right: 12px !important;
+}
+
+.driver-popover-close-btn:hover {
+  color: #6b7280 !important; /* gray-500 */
+  background: #f3f4f6 !important; /* gray-100 */
+}
+
+/* Progresso */
+.driver-popover-progress-text {
+  color: #9ca3af !important; /* gray-400 */
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+
+/* Elemento destacado */
+.driver-active-element {
+  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.3) !important; /* purple-600 com opacidade */
+  border-radius: 8px !important;
+}
+
+/* Seta do popover */
+.driver-popover-arrow-side-top,
+.driver-popover-arrow-side-bottom,
+.driver-popover-arrow-side-left,
+.driver-popover-arrow-side-right {
+  border-color: white !important;
+}
+
+/* Footer com botões */
+.driver-popover-footer {
+  display: flex !important;
+  gap: 8px !important;
+  margin-top: 16px !important;
+}
+
+/* Ajustes para mobile */
+@media (max-width: 640px) {
+  .driver-popover {
+    max-width: calc(100vw - 32px) !important;
+    margin: 16px !important;
+  }
+  
+  .driver-popover-title {
+    font-size: 16px !important;
+  }
+  
+  .driver-popover-description {
+    font-size: 13px !important;
+  }
+}
