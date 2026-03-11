@@ -1,25 +1,108 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router';
-import { ArrowLeft, Copy, ExternalLink, Check } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import * as React from 'react';
+import { useNavigate, useLocation } from 'react-router';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { ArrowLeft, Check, Copy, ExternalLink, Repeat } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Calendar } from './ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { Calendar as CalendarComponent } from './ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { mockClients, serviceIcons, serviceLabels } from '../data/mockData';
-import { ServiceType } from '../types';
+import { Checkbox } from './ui/checkbox';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { cn } from './ui/utils';
+import { copyToClipboard as copyText } from '../utils/clipboard';
+import { formatCurrency } from '../utils/currency';
+import { mockClients, serviceLabels, serviceIcons } from '../data/mockData';
+import { ServiceType } from '../types';
+import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 
 type Step = 'name' | 'phone' | 'details' | 'confirmation';
 
+// Number Picker Component (iOS style)
+interface NumberPickerProps {
+  value: number;
+  onChange: (value: number) => void;
+  min?: number;
+  max?: number;
+  className?: string;
+}
+
+function NumberPicker({ value, onChange, min = 1, max = 100, className = '' }: NumberPickerProps) {
+  const [isOpen, setIsOpen] = React.useState(false);
+  
+  const numbers = Array.from({ length: max - min + 1 }, (_, i) => min + i);
+  
+  return (
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className={`px-4 py-2 border rounded-lg bg-white text-center font-medium hover:bg-gray-50 transition-colors ${className}`}
+        >
+          {value}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-32 p-0" align="center">
+        <div className="max-h-60 overflow-y-auto">
+          {numbers.map((num) => (
+            <button
+              key={num}
+              type="button"
+              onClick={() => {
+                onChange(num);
+                setIsOpen(false);
+              }}
+              className={`w-full px-4 py-3 text-center transition-colors ${
+                num === value
+                  ? 'bg-purple-50 text-purple-600 font-semibold'
+                  : 'hover:bg-gray-50'
+              }`}
+            >
+              {num}
+            </button>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// Segmented Control Component
+interface SegmentedControlProps<T extends string> {
+  value: T;
+  onChange: (value: T) => void;
+  options: { value: T; label: string }[];
+  className?: string;
+}
+
+function SegmentedControl<T extends string>({ value, onChange, options, className = '' }: SegmentedControlProps<T>) {
+  return (
+    <div className={`flex bg-gray-100 rounded-full p-1 ${className}`}>
+      {options.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          onClick={() => onChange(option.value)}
+          className={`flex-1 px-3 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+            value === option.value
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function NewAppointment() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [step, setStep] = useState<Step>('name');
   const [searchName, setSearchName] = useState('');
   const [selectedClient, setSelectedClient] = useState<string>('');
@@ -34,6 +117,62 @@ export default function NewAppointment() {
   const [customService, setCustomService] = useState('');
   const [value, setValue] = useState('');
   const [notes, setNotes] = useState('');
+
+  // Recurrence states
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrenceType, setRecurrenceType] = useState<'daily' | 'weekly' | 'monthly'>('daily');
+  const [recurrenceInterval, setRecurrenceInterval] = useState('1');
+  const [recurrenceWeekDays, setRecurrenceWeekDays] = useState<number[]>([]);
+  const [recurrenceMonthDay, setRecurrenceMonthDay] = useState(1);
+  const [recurrenceEndType, setRecurrenceEndType] = useState<'never' | 'on' | 'after'>('never');
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState<Date | undefined>(undefined);
+  const [recurrenceEndCount, setRecurrenceEndCount] = useState('10');
+
+  // Preencher dados se vier de um agendamento anterior
+  useEffect(() => {
+    const state = location.state as any;
+    if (state?.prefillData) {
+      const data = state.prefillData;
+      
+      // Preencher nome e telefone
+      setSearchName(data.clientName || '');
+      setPhone(data.phone || '');
+      
+      // Preencher data
+      if (data.date) {
+        setSelectedDate(new Date(data.date + 'T00:00:00'));
+      }
+      
+      // Preencher horário
+      if (data.time) {
+        const [hour, minute] = data.time.split(':');
+        setTimeHour(hour || '09');
+        setTimeMinute(minute || '00');
+      }
+      
+      // Preencher duração
+      if (data.duration) {
+        const totalMinutes = parseInt(data.duration);
+        const hours = Math.floor(totalMinutes / 60);
+        const mins = totalMinutes % 60;
+        setDurationHours(hours.toString());
+        setDurationMinutes(mins.toString().padStart(2, '0'));
+      }
+      
+      // Preencher outros campos
+      setAddress(data.address || '');
+      setService(data.service || '');
+      setCustomService(data.customService || '');
+      setValue(data.value ? formatCurrency(data.value) : '');
+      setNotes(data.notes || '');
+      
+      // Ir direto para a etapa de detalhes
+      setStep('details');
+      
+      // Mostrar toast informando
+      toast.info('Usando informações do agendamento anterior');
+    }
+  }, [location.state]);
 
   const filteredClients = mockClients.filter(client =>
     client.name.toLowerCase().includes(searchName.toLowerCase())
@@ -85,15 +224,9 @@ export default function NewAppointment() {
       message += `\n📍 Endereço: ${address}`;
     }
     
-    message += `\n💰 Valor: R$ ${parseFloat(value).toFixed(2)}\n\nSe precisar remarcar, é só me avisar.`;
+    message += `\n💰 Valor: R$ ${formatCurrency(parseFloat(value))}\n\nSe precisar remarcar, é só me avisar.`;
     
     return message;
-  };
-
-  const copyToClipboard = () => {
-    const message = generateWhatsAppMessage();
-    navigator.clipboard.writeText(message);
-    toast.success('Mensagem copiada!');
   };
 
   const openWhatsApp = () => {
@@ -101,6 +234,16 @@ export default function NewAppointment() {
     const phoneNumber = phone.replace(/\D/g, '');
     const url = `https://wa.me/55${phoneNumber}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
+  };
+
+  const copyToClipboard = async () => {
+    const message = generateWhatsAppMessage();
+    const success = await copyText(message);
+    if (success) {
+      toast.success('Mensagem copiada!');
+    } else {
+      toast.error('Erro ao copiar mensagem');
+    }
   };
 
   const services: ServiceType[] = [
@@ -133,22 +276,23 @@ export default function NewAppointment() {
     return 4;
   };
 
+  const handleBack = () => {
+    if (step === 'name') navigate('/');
+    else if (step === 'phone') setStep('name');
+    else if (step === 'details') setStep('phone');
+    else setStep('details');
+  };
+
   return (
     <div className="space-y-4">
       {/* Header with progress */}
       <div>
         <div className="flex items-center gap-3 mb-2">
           <button
-            onClick={() => {
-              if (step === 'name') navigate('/');
-              else if (step === 'phone') setStep('name');
-              else if (step === 'details') setStep('phone');
-              else setStep('details');
-            }}
+            onClick={handleBack}
             className="flex items-center gap-2 text-purple-600 active:opacity-70"
           >
             <ArrowLeft className="w-5 h-5" />
-            <span className="text-base">Voltar</span>
           </button>
         </div>
         
@@ -309,7 +453,7 @@ export default function NewAppointment() {
                     />
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
-                    <Calendar
+                    <CalendarComponent
                       mode="single"
                       selected={selectedDate}
                       onSelect={setSelectedDate}
@@ -460,6 +604,169 @@ export default function NewAppointment() {
               />
             </div>
 
+            {/* Recurrence Section */}
+            <div className="pt-2 border-t">
+              <div className="flex items-center gap-2 mb-3">
+                <Checkbox 
+                  id="recurring" 
+                  checked={isRecurring}
+                  onCheckedChange={(checked) => {
+                    setIsRecurring(checked as boolean);
+                    if (checked && selectedDate) {
+                      setRecurrenceWeekDays([selectedDate.getDay()]);
+                    }
+                  }}
+                />
+                <Label htmlFor="recurring" className="text-sm font-medium flex items-center gap-1.5 cursor-pointer">
+                  <Repeat className="w-4 h-4" />
+                  Agendamento recorrente
+                </Label>
+              </div>
+
+              {isRecurring && (
+                <div className="space-y-4 pl-6 border-l-2 border-purple-100">
+                  {/* Repeat every */}
+                  <div>
+                    <Label className="text-sm mb-2 block">Repetir a cada:</Label>
+                    <div className="flex gap-2 items-center">
+                      <NumberPicker
+                        value={parseInt(recurrenceInterval) || 1}
+                        onChange={(val) => setRecurrenceInterval(val.toString())}
+                        min={1}
+                        max={30}
+                        className="w-20"
+                      />
+                      <SegmentedControl
+                        value={recurrenceType}
+                        onChange={(val) => {
+                          setRecurrenceType(val);
+                          // Update month day when changing to monthly
+                          if (val === 'monthly' && selectedDate) {
+                            setRecurrenceMonthDay(selectedDate.getDate());
+                          }
+                        }}
+                        options={[
+                          { 
+                            value: 'daily', 
+                            label: parseInt(recurrenceInterval) === 1 ? 'Dia' : 'Dias' 
+                          },
+                          { 
+                            value: 'weekly', 
+                            label: parseInt(recurrenceInterval) === 1 ? 'Semana' : 'Semanas' 
+                          },
+                          { 
+                            value: 'monthly', 
+                            label: parseInt(recurrenceInterval) === 1 ? 'Mês' : 'Meses' 
+                          },
+                        ]}
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Weekly - Day of week selector */}
+                  {recurrenceType === 'weekly' && (
+                    <div>
+                      <Label className="text-sm mb-2 block">Neste dia da semana:</Label>
+                      <div className="flex gap-2 justify-between">
+                        {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((day, index) => {
+                          const isSelected = recurrenceWeekDays.includes(index);
+                          return (
+                            <button
+                              key={index}
+                              type="button"
+                              onClick={() => {
+                                if (isSelected) {
+                                  setRecurrenceWeekDays(recurrenceWeekDays.filter(d => d !== index));
+                                } else {
+                                  setRecurrenceWeekDays([...recurrenceWeekDays, index]);
+                                }
+                              }}
+                              className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
+                                isSelected 
+                                  ? 'bg-purple-600 text-white' 
+                                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                              }`}
+                            >
+                              {day}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Monthly - Day of month */}
+                  {recurrenceType === 'monthly' && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-700">no dia</span>
+                      <NumberPicker
+                        value={recurrenceMonthDay}
+                        onChange={setRecurrenceMonthDay}
+                        min={1}
+                        max={31}
+                        className="w-20"
+                      />
+                    </div>
+                  )}
+
+                  {/* End type */}
+                  <div>
+                    <Label className="text-sm mb-2 block">Termina em:</Label>
+                    <div className="space-y-3">
+                      <SegmentedControl
+                        value={recurrenceEndType}
+                        onChange={setRecurrenceEndType}
+                        options={[
+                          { value: 'never', label: 'Nunca' },
+                          { value: 'on', label: 'Em' },
+                          { value: 'after', label: 'Após' },
+                        ]}
+                        className="w-full"
+                      />
+                      
+                      {recurrenceEndType === 'on' && (
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button
+                              type="button"
+                              className="w-full px-4 py-2.5 text-sm border rounded-lg bg-white text-left hover:bg-gray-50 transition-colors"
+                            >
+                              {recurrenceEndDate 
+                                ? format(recurrenceEndDate, "d 'de' MMMM 'de' yyyy", { locale: ptBR })
+                                : 'Selecionar data'
+                              }
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <CalendarComponent
+                              mode="single"
+                              selected={recurrenceEndDate}
+                              onSelect={setRecurrenceEndDate}
+                              className="p-2"
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      )}
+                      
+                      {recurrenceEndType === 'after' && (
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            min="1"
+                            value={recurrenceEndCount}
+                            onChange={(e) => setRecurrenceEndCount(e.target.value)}
+                            className="w-24"
+                          />
+                          <span className="text-sm text-gray-600">ocorrências</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <Button 
               className="w-full bg-purple-600 hover:bg-purple-700 h-12 text-base" 
               onClick={handleSubmit}
@@ -510,7 +817,7 @@ export default function NewAppointment() {
                 </div>
                 <div>
                   <span className="text-xs text-gray-600">Valor</span>
-                  <div className="font-medium text-purple-600">R$ {parseFloat(value).toFixed(2)}</div>
+                  <div className="font-medium text-purple-600">R$ {formatCurrency(parseFloat(value))}</div>
                 </div>
               </div>
             </CardContent>
