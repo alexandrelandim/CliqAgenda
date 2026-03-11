@@ -1,10 +1,14 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { ArrowLeft, AlertCircle } from 'lucide-react';
-import { Card, CardContent } from './ui/card';
-import { Badge } from './ui/badge';
+import { ArrowLeft, Calendar, Clock, AlertCircle } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Card, CardContent } from './ui/card';
+import { Badge } from './ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 import { mockAppointments, serviceLabels } from '../data/mockData';
+import { Appointment } from '../types';
+import { formatCurrency } from '../utils/currency';
 
 export default function PendingServices() {
   const navigate = useNavigate();
@@ -21,11 +25,10 @@ export default function PendingServices() {
       <div className="bg-white border-b sticky top-0 z-10">
         <div className="px-4 py-3">
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/') }
             className="flex items-center gap-2 text-purple-600 active:opacity-70 mb-3"
           >
             <ArrowLeft className="w-5 h-5" />
-            <span className="text-base">Voltar</span>
           </button>
           <h1 className="text-xl font-semibold">Serviços Pendentes</h1>
           <p className="text-sm text-gray-600 mt-1">
@@ -90,7 +93,7 @@ export default function PendingServices() {
                         <div className="flex justify-between mt-1">
                           <span>Valor:</span>
                           <span className="font-bold text-purple-600">
-                            R$ {apt.value.toFixed(2)}
+                            R$ {formatCurrency(apt.value)}
                           </span>
                         </div>
                       </div>
