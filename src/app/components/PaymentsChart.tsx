@@ -11,6 +11,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 interface ChartData {
   month: string;
   value: number;
+  id: string;
 }
 
 export default function PaymentsChart() {
@@ -36,6 +37,7 @@ export default function PaymentsChart() {
     const data: ChartData[] = months.map((month, idx) => ({
       month,
       value: 0,
+      id: `${selectedYear}-${idx}`,
     }));
 
     mockAppointments.forEach(apt => {
@@ -100,7 +102,6 @@ export default function PaymentsChart() {
           className="flex items-center gap-2 text-purple-600 active:opacity-70"
         >
           <ArrowLeft className="w-5 h-5" />
-          <span className="text-base">Voltar</span>
         </button>
         <button
           onClick={() => setHideValues(!hideValues)}
@@ -217,6 +218,7 @@ export default function PaymentsChart() {
                     dataKey="value" 
                     fill="#8b5cf6"
                     radius={[8, 8, 0, 0]}
+                    isAnimationActive={false}
                   />
                 </BarChart>
               </ResponsiveContainer>
